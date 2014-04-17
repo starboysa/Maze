@@ -6,6 +6,7 @@ public class Main {
 	public static void main(String[] args) {
 		int xAmount = 15;
 		int yAmount = 15;
+		StdDraw.setCanvasSize(512, 512);
 		StdDraw.setXscale(0, xAmount);
 		StdDraw.setYscale(0, yAmount);
 		CellGrid cg = new CellGrid(xAmount-0.1, yAmount-0.1);
@@ -53,9 +54,11 @@ class CellGrid {
 
 	public void draw() {
 		for(Cell[] cellColumn : cells) {
-			for(Cell cell : cellColumn) {
-				cell.draw();
-			}
+			Runnable renderThread = new xRenderThread(cellColumn);
+			new Thread(renderThread).start();
+//			for(Cell cell : cellColumn) {
+//				cell.draw();
+//			}
 		}
 	}
 }
@@ -240,5 +243,20 @@ enum Side {
 class o {
 	public static void print(Object s) {
 		System.out.println(s);
+	}
+}
+
+class xRenderThread implements Runnable {
+	public Cell[] renderObjs;
+
+	public xRenderThread(Cell[] renderObjsArg) {
+		renderObjs = renderObjsArg;
+	}
+
+	@Override
+	public void run() {
+		for(Cell renderObj : renderObjs) {
+			renderObj.draw();
+		}
 	}
 }
