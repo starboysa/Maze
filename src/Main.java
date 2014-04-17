@@ -1,17 +1,20 @@
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
 public class Main {
+	public static CellGrid mainGrid;
+
 	public static void main(String[] args) {
 		int xAmount = 30;
 		int yAmount = 30;
 		StdDraw.setCanvasSize(1024, 1024);
 		StdDraw.setXscale(0, xAmount);
 		StdDraw.setYscale(0, yAmount);
-		CellGrid cg = new CellGrid(xAmount-0.1, yAmount-0.1);
-		cg.beginPathcreation();
-		cg.draw();
+		mainGrid = new CellGrid(xAmount-0.1, yAmount-0.1);
+		mainGrid.beginPathcreation();
+		mainGrid.draw();
 	}
 }
 
@@ -32,53 +35,33 @@ class Vector2 {
 
 class CellGrid {
 	public static Random rand = new Random();
-	public static int threadCount = 0;
 	public Vector2 size;
-	public Cell[][] cells;
+	public List<Cell[]> cells = new ArrayList<Cell[]>();
+	public Iterator<Cell[]> cellIterator;
 
 	public CellGrid(double sizeX, double sizeY) {
 		size = new Vector2(sizeX, sizeY);
-		cells =  new Cell[(int) Math.ceil(sizeX*10)+1][];
 		for(int i=0; i<=sizeX*10; i++) {
-			cells[i] = new Cell[(int) Math.ceil(sizeY*10)+1];
+			Cell[] tempCA = new Cell[(int) Math.ceil(sizeY*10)+1];
 			for(int j=0; j<=sizeY*10; j++) {
-				cells[i][j] = new Cell(0.0+(i/10.0), 0.0+(j/10.0), this, new Vector2(i, j));
+				tempCA[j] = new Cell(0.0+(i/10.0), 0.0+(j/10.0), this, new Vector2(i, j));
 			}
+			cells.add(tempCA);
 		}
+		cellIterator = cells.iterator();
 	}
 
 	public void beginPathcreation() {
 		int startX = 0;//rand.nextInt((int) Math.ceil(size.x*10.0));
 		int startY = 0;//rand.nextInt((int) Math.ceil(size.y*10.0));
-		cells[startX][startY].findPath(Side.parseInt(rand.nextInt(3)), false);
+		cells.get(startX)[startY].findPath(Side.parseInt(rand.nextInt(3)), false);
 	}
 
 	public void draw() {
-		int totalThreadCount = 0;
-		List<Thread> threadList = new ArrayList<Thread>();
-		for(Cell[] cellColumn : cells) {
-			Runnable renderThread = new xRenderThread(cellColumn);
-			threadList.add(new Thread(renderThread));
-			totalThreadCount++;
-//			for(Cell cell : cellColumn) {
-//				cell.draw();
-//			}
-		}
-
-		int allowedThreadAmount = 5;
-		int threadOffset = 0;
-		while(true) {
-			if(threadCount < allowedThreadAmount) {
-				int i;
-				for(i=0;i<=allowedThreadAmount-threadCount;i++) {
-					threadCount++;
-					threadList.get(threadOffset+i).start();
-				}
-				threadOffset += i;
-			}
-			if(threadOffset == totalThreadCount) {
-				break;
-			}
+		o.print("Starting Renderer");
+		int allowedThreadAmount = 7;
+		for(int i=1;i<=allowedThreadAmount;i++) {
+			(new xRenderThread()).start();
 		}
 	}
 }
@@ -145,6 +128,7 @@ class Cell {
 	}
 
 	public void findPath(Side in, boolean add) {
+		o.print("Pathfinding");
 		this.inPath = true;
 		prevSide = in;
 		if(add) {
@@ -180,7 +164,7 @@ class Cell {
 		int xPos = (int) (this.indexPosition.x+(side.relativePosition().x*10));
 		int yPos = (int) (this.indexPosition.y+(side.relativePosition().y*10));
 		if(xPos <= parent.size.x*10 && yPos <= parent.size.y*10 && xPos >= 0 && yPos >= 0) {
-			return parent.cells[xPos][yPos];
+			return parent.cells.get(xPos)[yPos];
 		}
 		return null;
 	}
@@ -266,18 +250,14 @@ class o {
 	}
 }
 
-class xRenderThread implements Runnable {
-	public Cell[] renderObjs;
-
-	public xRenderThread(Cell[] renderObjsArg) {
-		renderObjs = renderObjsArg;
-	}
-
+class xRenderThread extends Thread {
 	@Override
 	public void run() {
-		for(Cell renderObj : renderObjs) {
-			renderObj.draw();
+		while(Main.mainGrid.cellIterator.hasNext()) {
+			Cell[] renderObjs = Main.mainGrid.cellIterator.next();
+			for(Cell renderObj : renderObjs) {
+				renderObj.draw();
+			}
 		}
-		CellGrid.threadCount--;
 	}
 }
