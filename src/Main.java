@@ -5,16 +5,20 @@ import java.util.Random;
 
 public class Main {
 	public static CellGrid mainGrid;
+	public static boolean interestingDrawout = true;
 
 	public static void main(String[] args) {
-		int xAmount = 30;
-		int yAmount = 30;
+		int xAmount = 5;
+		int yAmount = 5;
 		StdDraw.setCanvasSize(1024, 1024);
 		StdDraw.setXscale(0, xAmount);
 		StdDraw.setYscale(0, yAmount);
 		mainGrid = new CellGrid(xAmount-0.1, yAmount-0.1);
 		mainGrid.beginPathcreation();
-		mainGrid.draw();
+		o.print("Starting Renderer");
+		if(!interestingDrawout) {
+			mainGrid.draw();
+		}
 	}
 }
 
@@ -54,11 +58,11 @@ class CellGrid {
 	public void beginPathcreation() {
 		int startX = 0;//rand.nextInt((int) Math.ceil(size.x*10.0));
 		int startY = 0;//rand.nextInt((int) Math.ceil(size.y*10.0));
-		cells.get(startX)[startY].findPath(Side.parseInt(rand.nextInt(3)), false);
+		cells.get(startX)[startY].findPath(Side.SOUTH, true);
 	}
 
 	public void draw() {
-		o.print("Starting Renderer");
+		cells.get(0)[cells.get(cells.size()-1).length-1].holes.add(Side.NORTH);
 		int allowedThreadAmount = 7;
 		for(int i=1;i<=allowedThreadAmount;i++) {
 			(new xRenderThread()).start();
@@ -128,7 +132,6 @@ class Cell {
 	}
 
 	public void findPath(Side in, boolean add) {
-		o.print("Pathfinding");
 		this.inPath = true;
 		prevSide = in;
 		if(add) {
@@ -139,7 +142,11 @@ class Cell {
 		Cell nextCell;
 		int counter = 1;
 		do {
-			randSide = Side.parseInt(wrapAdd(randSide.sideInt));
+			if(counter > 6) {
+				randSide = Side.parseInt(wrapAdd(randSide.sideInt));
+			} else {
+				randSide = Side.parseInt(rand.nextInt(4));
+			}
 			nextCell = getCellFromSide(randSide);
 			if(nextCell != null) {
 				if(nextCell.inPath) {
@@ -157,6 +164,9 @@ class Cell {
 			if(prevCell != null) {
 				prevCell.findPath(prevCell.prevSide, false);
 			}
+		}
+		if(Main.interestingDrawout) {
+			this.draw();
 		}
 	}
 
@@ -182,8 +192,7 @@ enum Side {
 	NORTH(0),
 	WEST(1),
 	SOUTH(2),
-	EAST(3),
-	BLANK(4);
+	EAST(3);
 
 	public final int sideInt;
 	Side(int sideIntArg) {
@@ -200,8 +209,6 @@ enum Side {
 			return NORTH;
 		} else if(this == EAST) {
 			return WEST;
-		} else if(this == BLANK) {
-			return BLANK;
 		} else {
 			o.print("ERROR: Side.findOpposite() Side is null, I don't know how this could even happen...");
 			return null;
@@ -217,8 +224,6 @@ enum Side {
 			return new Vector2(0, -Cell.cellSize);
 		} else if(this == EAST) {
 			return new Vector2(Cell.cellSize, 0);
-		} else if(this == BLANK) {
-			return new Vector2(0, 0);
 		} else {
 			o.print("ERROR: Side.relativePosition() Side is null, I don't know how this could even happen...");
 			return null;
@@ -234,8 +239,6 @@ enum Side {
 			return SOUTH;
 		} else if(parse == EAST.sideInt) {
 			return EAST;
-		} else if(parse == BLANK.sideInt) {
-			return BLANK;
 		} else {
 			o.print("ERROR: Side.parseInt(int parse) parse isn't a valid integer");
 			return null;
