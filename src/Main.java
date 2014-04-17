@@ -4,9 +4,9 @@ import java.util.Random;
 
 public class Main {
 	public static void main(String[] args) {
-		int xAmount = 15;
-		int yAmount = 15;
-		StdDraw.setCanvasSize(512, 512);
+		int xAmount = 30;
+		int yAmount = 30;
+		StdDraw.setCanvasSize(1024, 1024);
 		StdDraw.setXscale(0, xAmount);
 		StdDraw.setYscale(0, yAmount);
 		CellGrid cg = new CellGrid(xAmount-0.1, yAmount-0.1);
@@ -32,6 +32,7 @@ class Vector2 {
 
 class CellGrid {
 	public static Random rand = new Random();
+	public static int threadCount = 0;
 	public Vector2 size;
 	public Cell[][] cells;
 
@@ -53,12 +54,31 @@ class CellGrid {
 	}
 
 	public void draw() {
+		int totalThreadCount = 0;
+		List<Thread> threadList = new ArrayList<Thread>();
 		for(Cell[] cellColumn : cells) {
 			Runnable renderThread = new xRenderThread(cellColumn);
-			new Thread(renderThread).start();
+			threadList.add(new Thread(renderThread));
+			totalThreadCount++;
 //			for(Cell cell : cellColumn) {
 //				cell.draw();
 //			}
+		}
+
+		int allowedThreadAmount = 5;
+		int threadOffset = 0;
+		while(true) {
+			if(threadCount < allowedThreadAmount) {
+				int i;
+				for(i=0;i<=allowedThreadAmount-threadCount;i++) {
+					threadCount++;
+					threadList.get(threadOffset+i).start();
+				}
+				threadOffset += i;
+			}
+			if(threadOffset == totalThreadCount) {
+				break;
+			}
 		}
 	}
 }
@@ -258,5 +278,6 @@ class xRenderThread implements Runnable {
 		for(Cell renderObj : renderObjs) {
 			renderObj.draw();
 		}
+		CellGrid.threadCount--;
 	}
 }
